@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>AI 수학 미로 탈출 - 심연 모드</title>
+    <title>AI 수학 미로 탈출 - 모드</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; user-select: none; }
         canvas { display: block; }
@@ -33,7 +33,7 @@
 
     <!-- 1. 로그인 패널 -->
     <div id="login-panel">
-        <h1 style="margin-bottom: 10px;">심연의 미로</h1>
+        <h1 style="margin-bottom: 10px;">의 미로</h1>
         <p style="color: #aaa; margin-bottom: 30px;">진입할 이름을 입력하세요</p>
         <input type="text" id="playerIdInput" placeholder="닉네임 입력 (미입력시 Guest)">
         <button id="startGameBtn">미로 입장</button>
@@ -44,7 +44,7 @@
         <!-- 화면 꽉 차게 렌더링 할 캔버스 -->
         <canvas id="gameCanvas"></canvas>
         <canvas id="minimap" width="150" height="150"></canvas>
-        <div id="instruction" class="hidden">화면을 클릭하여 진입하세요<br><span style="font-size: 14px; color:#aaa;">(ESC: 마우스 잠금 해제 / Ctrl+F: 개발자 모드)</span></div>
+        <div id="instruction" class="hidden">화면을 클릭하여 진입하세요<br><span style="font-size: 14px; color:#aaa;">(ESC: 마우스 잠금 해제 / 조이스틱 액션버튼: 클릭)</span></div>
     </div>
 
     <!-- 3. 문제 풀이 패널 -->
@@ -95,7 +95,7 @@
         const mCanvas = document.getElementById("minimap");
         const mCtx = mCanvas.getContext("2d");
 
-        // 💡 밝기 조절 반영
+        // 밝기 조절 반영
         const bgColor = 0x050505;
         scene.background = new THREE.Color(bgColor); 
         scene.fog = new THREE.Fog(bgColor, 1, 15); // 시야 넓힘
@@ -136,7 +136,7 @@
             document.getElementById("instruction").classList.remove("hidden");
         });
 
-        // 💡 마우스 클릭 이벤트 (화면 전체 감지)
+        // 마우스 클릭 이벤트 (화면 전체 감지)
         document.addEventListener("click", () => {
             if (document.getElementById("login-panel").style.display !== "none") return;
             if (gameState === GameState.READY || gameState === GameState.PLAYING) {
@@ -154,7 +154,7 @@
             } else {
                 if (gameState === GameState.PLAYING) {
                     gameState = GameState.READY;
-                    document.getElementById("instruction").innerText = "화면을 클릭하여 계속하세요\n(개발자 모드: Ctrl + F)";
+                    document.getElementById("instruction").innerText = "화면을 클릭하여 계속하세요)";
                     document.getElementById("instruction").style.display = "block";
                 }
             }
@@ -198,7 +198,7 @@
             wallMeshes.forEach(w => scene.remove(w));
             wallMeshes = [];
             
-            // 💡 밝기 상향
+            // 밝기 상향
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); 
             scene.add(ambientLight);
             
@@ -233,15 +233,13 @@
             }
         }
 
-        // 💡 수정: 추적자 랜덤 위치 소환 (벽이 아닌 곳 & 플레이어 기준 5칸 이상 떨어지게)
+        // 추적자 랜덤 위치 소환 (벽이 아닌 곳 & 플레이어 기준 5칸 이상 떨어지게)
         function spawnChaserRandomly() {
             let valid = false; let rx, ry;
             while(!valid) {
-                // 1 ~ COLS-2 사이의 랜덤 정수 좌표
                 let tryX = Math.floor(Math.random() * (COLS - 2)) + 1;
                 let tryY = Math.floor(Math.random() * (ROWS - 2)) + 1;
                 
-                // 해당 좌표가 길(0)일 때만 거리 검사
                 if (maze[tryY] && maze[tryY][tryX] === 0) {
                     let dist = Math.hypot((tryX + 0.5) - player.x, (tryY + 0.5) - player.y);
                     if (dist >= 5) {
@@ -259,13 +257,25 @@
             }
         }
 
+        // 💡 언어 랜덤 선택 함수 (아랍어 40%, 영어 30%, 일본어 20%, 한국어 10%)
+        function getTargetLanguage() {
+            const rand = Math.random() * 100;
+            if (rand < 40) return "Arabic (아랍어)";
+            if (rand < 70) return "English (영어)";
+            if (rand < 90) return "Japanese (일본어)";
+            return "Korean (한국어)";
+        }
+
         async function fetchMathProblem() {
             if (gameState !== GameState.QUIZ) return;
             document.getElementById("math-panel").classList.remove("hidden");
             document.getElementById("question-text").innerText = "🚨 추적자에게 붙잡혔다! 수능 객관식 문제를 생성 중...";
             document.getElementById("options-text").innerHTML = "";
 
-            const prompt = `수능 수학 미적분/기하/확통 중 수능 28번 난이도 객관식 문제 1개 생성. 무조건 JSON 반환: { "question": "문제", "options": ["1","2","3","4","5"], "answer": "1~5" }`;
+            const targetLang = getTargetLanguage();
+            // 💡 문제 퀄리티 상승 및 지정 언어로 출력 강제
+            const prompt = `너는 고등학교 수학 교사야. 수능 수학(미적분, 기하, 확통 중 택1) 28번 수준의 객관식 문제를 1개 똑바로 만들어줘. 문제는 수학적으로 오류가 없고 논리적으로 완벽해야 해. 모든 지문과 보기는 반드시 ${targetLang}로만 작성해. 무조건 아래 JSON 형식만 반환해: { "question": "문제 내용", "options": ["1번 보기", "2번 보기", "3번 보기", "4번 보기", "5번 보기"], "answer": "1~5 중 정답 번호 숫자 하나" }`;
+            
             try {
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
@@ -275,7 +285,8 @@
                 const data = await response.json();
                 const quiz = JSON.parse(data.choices[0].message.content);
                 currentQuestionStr = quiz.question; 
-                document.getElementById("question-text").innerText = quiz.question;
+                // 언어가 무엇인지 태그로 보여줌
+                document.getElementById("question-text").innerText = `[${targetLang}] \n` + quiz.question;
                 document.getElementById("options-text").innerHTML = quiz.options.map((opt, i) => `<span style="margin:0 10px;">(${i+1}) ${opt}</span>`).join("");
                 currentAnswer = quiz.answer.toString();
                 timeLeft = MAX_TIME;
@@ -291,25 +302,22 @@
             const key = e.key.toLowerCase();
             if (keys.hasOwnProperty(key)) keys[key] = true;
 
-            // 💡 수정: 퀴즈 정답/오답 처리 및 추적자 딜레이 스폰 로직
+            // 퀴즈 정답/오답 처리
             if (gameState === GameState.QUIZ && ["1","2","3","4","5"].includes(e.key)) {
                 quizStats.totalAttempted++; 
                 if (e.key === currentAnswer) {
                     quizStats.correctAnswers++; 
                     
-                    // 정답 피드백 텍스트 표시
                     document.getElementById("question-text").innerText = "✅ 정답입니다! (추적자 3초 후 재배치)";
                     document.getElementById("options-text").innerHTML = "";
                     
-                    // 1초 뒤 UI 숨기고 마우스 대기 상태로
                     setTimeout(() => {
                         document.getElementById("math-panel").classList.add("hidden");
                         gameState = GameState.READY;
-                        document.getElementById("instruction").innerText = "화면을 클릭하여 계속하세요\n(개발자 모드: Ctrl + F)";
+                        document.getElementById("instruction").innerText = "화면을 클릭하여 계속하세요)";
                         document.getElementById("instruction").style.display = "block";
                     }, 1000);
 
-                    // 3초 뒤에 추적자 멀리서 소환
                     isChaserActive = false;
                     if(chaserMesh) chaserMesh.visible = false;
                     setTimeout(() => {
@@ -317,7 +325,8 @@
                     }, 3000);
 
                 } else {
-                    alert("❌ 오답! 심연에 잡아먹혔습니다."); 
+                    // 💡 오답 시 정답 번호 표출
+                    alert(`❌ 오답! 정답은 ${currentAnswer}번이었습니다.\n에 잡아먹혔습니다.`); 
                     resetGame();
                 }
             }
@@ -328,7 +337,6 @@
         });
 
         function update() {
-            // 💡 PLAYING 상태일 때만 이동 및 시야 회전 적용
             if (gameState === GameState.PLAYING) {
                 let dx = 0, dz = 0;
                 if (keys.w || keys.arrowup) { dx -= Math.sin(yaw) * PLAYER_SPEED; dz -= Math.cos(yaw) * PLAYER_SPEED; }
@@ -336,7 +344,6 @@
                 if (keys.a || keys.arrowleft) { dx -= Math.cos(yaw) * PLAYER_SPEED; dz += Math.sin(yaw) * PLAYER_SPEED; }
                 if (keys.d || keys.arrowright) { dx += Math.cos(yaw) * PLAYER_SPEED; dz -= Math.sin(yaw) * PLAYER_SPEED; }
 
-                // 💡 수정: 벽 파고들기(시야 뚫림) 방지를 위한 충돌 여백(margin) 0.4로 대폭 확장
                 let margin = 0.4; 
                 if (maze[Math.floor(player.y)] && maze[Math.floor(player.y)][Math.floor(player.x + dx + Math.sign(dx) * margin)] === 0) player.x += dx;
                 if (maze[Math.floor(player.y + dz + Math.sign(dz) * margin)] && maze[Math.floor(player.y + dz + Math.sign(dz) * margin)][Math.floor(player.x)] === 0) player.y += dz;
@@ -357,7 +364,7 @@
                     }
                 }
                 
-                // 💡 추적자 굴러가는 애니메이션
+                // 추적자 굴러가는 애니메이션
                 if (chaserMesh && isChaserActive) {
                     chaserMesh.position.set(chaser.x, 0, chaser.y);
                     let cdx = player.x - chaser.x, cdy = player.y - chaser.y;
@@ -369,7 +376,6 @@
                 if (Math.hypot(player.x - (exit.x + 0.5), player.y - (exit.y + 0.5)) < 0.8) {
                     let time = ((Date.now() - gameStartTime) / 1000).toFixed(2);
                     alert(`🎉 탈출 성공! 시간: ${time}초`);
-                    // Firebase에 닉네임과 함께 전송
                     if(window.saveGameStats) window.saveGameStats({ playerId: currentUserId, clearTime: time, ...quizStats });
                     resetGame();
                 }
@@ -415,7 +421,7 @@
             
             const instruction = document.getElementById("instruction");
             if(document.getElementById("login-panel").style.display === "none") {
-                instruction.innerText = "화면을 클릭하여 심연으로 진입하세요";
+                instruction.innerText = "화면을 클릭하여 으로 진입하세요\n(조이스틱 액션버튼: 클릭)";
                 instruction.style.display = "block";
                 instruction.classList.remove("hidden");
             }
