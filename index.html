@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8">ㅎ
     <title>AI 수학 미로 탈출 - 모드</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; user-select: none; }
@@ -35,7 +35,7 @@
     <div id="login-panel">
         <h1 style="margin-bottom: 10px;">의 미로</h1>
         <p style="color: #aaa; margin-bottom: 30px;">진입할 이름을 입력하세요</p>
-        <input type="text" id="playerIdInput" placeholder="닉네임 입력 (미입력시 Guest)">
+        <input type="text" id="playerIdInput" placeholder="닉네임 입력">
         <button id="startGameBtn">미로 입장</button>
     </div>
 
@@ -258,40 +258,70 @@
         }
 
         // 💡 언어 랜덤 선택 함수 (아랍어 40%, 영어 30%, 일본어 20%, 한국어 10%)
-        function getTargetLanguage() {
-            const rand = Math.random() * 100;
-            if (rand < 40) return "Arabic (아랍어)";
-            if (rand < 70) return "English (영어)";
-            if (rand < 90) return "Japanese (일본어)";
-            return "Korean (한국어)";
-        }
+       // 💡 언어 랜덤 선택 함수 (아랍어 35%, 산스크리트어 30%, 영어 15%, 일본어 15%, 한국어 5%)
+function getTargetLanguage() {
+    const rand = Math.random() * 100;
+    if (rand < 35) return "Arabic (아랍어)";
+    if (rand < 65) return "Sanskrit (산스크리트어)";
+    if (rand < 80) return "English (영어)";
+    if (rand < 95) return "Japanese (일본어)";
+    return "Korean (한국어)";
+}
 
-        async function fetchMathProblem() {
-            if (gameState !== GameState.QUIZ) return;
-            document.getElementById("math-panel").classList.remove("hidden");
-            document.getElementById("question-text").innerText = "🚨 추적자에게 붙잡혔다! 수능 객관식 문제를 생성 중...";
-            document.getElementById("options-text").innerHTML = "";
+async function fetchMathProblem() {
+    if (gameState !== GameState.QUIZ) return;
+    document.getElementById("math-panel").classList.remove("hidden");
+    document.getElementById("question-text").innerText = "🚨 심연의 감시자가 문제를 준비 중입니다...";
+    document.getElementById("options-text").innerHTML = "";
 
-            const targetLang = getTargetLanguage();
-            // 💡 문제 퀄리티 상승 및 지정 언어로 출력 강제
-            const prompt = `너는 고등학교 수학 교사야. 수능 수학(미적분, 기하, 확통 중 택1) 28번 수준의 객관식 문제를 1개 똑바로 만들어줘. 문제는 수학적으로 오류가 없고 논리적으로 완벽해야 해. 모든 지문과 보기는 반드시 ${targetLang}로만 작성해. 무조건 아래 JSON 형식만 반환해: { "question": "문제 내용", "options": ["1번 보기", "2번 보기", "3번 보기", "4번 보기", "5번 보기"], "answer": "1~5 중 정답 번호 숫자 하나" }`;
-            
-            try {
-                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } })
-                });
-                const data = await response.json();
-                const quiz = JSON.parse(data.choices[0].message.content);
-                currentQuestionStr = quiz.question; 
-                // 언어가 무엇인지 태그로 보여줌
-                document.getElementById("question-text").innerText = `[${targetLang}] \n` + quiz.question;
-                document.getElementById("options-text").innerHTML = quiz.options.map((opt, i) => `<span style="margin:0 10px;">(${i+1}) ${opt}</span>`).join("");
-                currentAnswer = quiz.answer.toString();
-                timeLeft = MAX_TIME;
-            } catch (e) { document.getElementById("question-text").innerText = "오류 발생. 새로고침 하세요."; }
+    const targetLang = getTargetLanguage();
+    
+    // 💡 문제 난이도 상향 및 수학적 엄밀성 강조 프롬프트
+    const prompt = `
+        Role: 최고 난이도 수학 문제 출제 위원.
+        Task: 고등학교 수능 수학 가형(미적분/기하) 중 오답률 90% 이상의 '킬러 문항(30번 수준)'을 생성하라.
+        Language: 모든 문장과 보기는 반드시 '${targetLang}'로만 작성하라.
+        Requirements:
+        1. 단순 계산이 아닌 심오한 추론과 개념 복합형 문제를 출제할 것.
+        2. 수학적 기호(LaTeX 표현법 등)를 정확히 사용하여 오류가 전혀 없도록 할 것.
+        3. 정답은 1~5번 보기 중 하나로 완벽하게 떨어져야 하며, 계산 과정에 모순이 없어야 함.
+        4. 보기는 매력적인 오답을 포함하여 구성할 것.
+        
+        Output JSON Format ONLY:
+        {
+            "question": "엄밀하고 구체적인 문제 내용",
+            "options": ["1번 보기", "2번 보기", "3번 보기", "4번 보기", "5번 보기"],
+            "answer": "정답 숫자 (1~5)"
         }
+    `;
+    
+    try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: { 
+                "Authorization": `Bearer ${GROQ_API_KEY}`, 
+                "Content-Type": "application/json" 
+            },
+            body: JSON.stringify({ 
+                model: "llama-3.3-70b-versatile", 
+                messages: [{ role: "user", content: prompt }], 
+                response_format: { type: "json_object" } 
+            })
+        });
+        const data = await response.json();
+        const quiz = JSON.parse(data.choices[0].message.content);
+        
+        currentQuestionStr = quiz.question; 
+        document.getElementById("question-text").innerText = `[Language: ${targetLang}]\n\n${quiz.question}`;
+        document.getElementById("options-text").innerHTML = quiz.options.map((opt, i) => 
+            `<span style="margin:0 10px; display:block; margin-bottom:5px;">(${i+1}) ${opt}</span>`
+        ).join("");
+        currentAnswer = quiz.answer.toString();
+        timeLeft = MAX_TIME;
+    } catch (e) { 
+        document.getElementById("question-text").innerText = "심연의 연결이 끊겼습니다. 다시 시도하십시오."; 
+    }
+}
 
         window.addEventListener("keydown", (e) => {
             if (e.ctrlKey && e.key.toLowerCase() === 'f') {
@@ -421,7 +451,7 @@
             
             const instruction = document.getElementById("instruction");
             if(document.getElementById("login-panel").style.display === "none") {
-                instruction.innerText = "화면을 클릭하여 으로 진입하세요\n(조이스틱 액션버튼: 클릭)";
+                instruction.innerText = "화면을 클릭하여 진입하세요\n(조이스틱 액션버튼: 클릭)";
                 instruction.style.display = "block";
                 instruction.classList.remove("hidden");
             }
