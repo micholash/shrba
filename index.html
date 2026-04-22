@@ -125,6 +125,8 @@
         let timeLeft = 60000; const MAX_TIME = 60000;
         let gameStartTime = 0;
         let quizStats = { totalAttempted: 0, correctAnswers: 0, wrongQuestions: [] };
+        let keyTimeStats = { up: 0, down: 0, left: 0, right: 0 };
+        let lastFrameTime = Date.now();
 
         let wallMeshes = [], chaserMesh, exitMesh, chaserTexture;
 
@@ -403,10 +405,27 @@ async function fetchMathProblem() {
                 }
 
                 // 탈출 조건
+                // 탈출 조건
                 if (Math.hypot(player.x - (exit.x + 0.5), player.y - (exit.y + 0.5)) < 0.8) {
                     let time = ((Date.now() - gameStartTime) / 1000).toFixed(2);
                     alert(`🎉 탈출 성공! 시간: ${time}초`);
-                    if(window.saveGameStats) window.saveGameStats({ playerId: currentUserId, clearTime: time, ...quizStats });
+                    
+                    // 💡 [수정] 밀리초를 보기 편하게 '초' 단위로 바꾸고 전송 데이터에 포함시킵니다.
+                    let formattedMoveTimes = {
+                        up: (keyTimeStats.up / 1000).toFixed(2) + "s",
+                        down: (keyTimeStats.down / 1000).toFixed(2) + "s",
+                        left: (keyTimeStats.left / 1000).toFixed(2) + "s",
+                        right: (keyTimeStats.right / 1000).toFixed(2) + "s"
+                    };
+
+                    if(window.saveGameStats) {
+                        window.saveGameStats({ 
+                            playerId: currentUserId, 
+                            clearTime: time, 
+                            ...quizStats, 
+                            moveTimeStats: formattedMoveTimes // 👈 전송 데이터에 새로 추가됨
+                        });
+                    }
                     resetGame();
                 }
 
@@ -457,6 +476,8 @@ async function fetchMathProblem() {
             }
 
             quizStats = { totalAttempted: 0, correctAnswers: 0, wrongQuestions: [] };
+            keyTimeStats = { up: 0, down: 0, left: 0, right: 0 };
+            lastFrameTime = Date.now();
             build3DWorld();
         }
 
