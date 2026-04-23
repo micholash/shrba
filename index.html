@@ -1,499 +1,78 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">ㅎ
-    <title>AI 수학 미로 탈출 - 모드</title>
-    <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; user-select: none; }
-        canvas { display: block; }
-        
-        #game-container { position: relative; width: 100vw; height: 100vh; }
-        
-        #minimap { position: absolute; top: 10px; left: 10px; border: 2px solid #333; border-radius: 5px; background: rgba(0,0,0,0.5); }
-        
-        #instruction { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; font-size: 20px; pointer-events: none; text-shadow: 2px 2px 4px #000; }
-        
-        #login-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: white; }
-        #playerIdInput { padding: 12px; font-size: 18px; border-radius: 5px; border: none; margin-bottom: 20px; text-align: center; width: 250px; }
-        #startGameBtn { padding: 12px 40px; font-size: 20px; background: #4a4a4a; color: white; border: none; cursor: pointer; border-radius: 5px; transition: 0.2s; }
-        #startGameBtn:hover { background: #666; }
-        
-        #math-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.9); padding: 40px; color: white; border: 2px solid #555; border-radius: 10px; text-align: center; min-width: 400px; z-index: 50; }
-        .question { font-size: 22px; margin-bottom: 30px; line-height: 1.5; word-break: keep-all; }
-        .options { font-size: 18px; margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
-        .timer-bar { width: 100%; height: 10px; background: #333; border-radius: 5px; overflow: hidden; }
-        #timer-fill { width: 100%; height: 100%; background: #ff3333; transition: width 0.1s linear; }
-        
-        .hidden { display: none !important; }
-    </style>
-    <!-- Three.js 로드 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>심연의 미로</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <!-- 1. 로그인 패널 -->
+    <!-- ① 로그인 패널 -->
     <div id="login-panel">
-        <h1 style="margin-bottom: 10px;">의 미로</h1>
-        <p style="color: #aaa; margin-bottom: 30px;">진입할 이름을 입력하세요</p>
-        <input type="text" id="playerIdInput" placeholder="닉네임 입력">
-        <button id="startGameBtn">미로 입장</button>
+        <div class="login-box">
+            <div class="login-logo">
+                <span class="logo-abyss">심연</span>
+                <span class="logo-maze">의 미로</span>
+            </div>
+            <p class="login-sub">진입할 이름을 입력하세요</p>
+            <input type="text" id="playerIdInput" placeholder="닉네임 입력" autocomplete="off" maxlength="16">
+            <button id="startGameBtn">미로 입장</button>
+            <div class="divider"></div>
+            <button id="joystickBtn" id="joystickBtn">🎮 조이스틱 연결 (Web Serial)</button>
+            <div id="joystick-status"></div>
+            <div class="login-controls">
+                <span>WASD / 방향키: 이동</span>
+                <span>마우스: 시점 회전</span>
+                <span>숫자 1~5: 퀴즈 응답</span>
+                <span>Ctrl+F: 개발자 모드</span>
+            </div>
+        </div>
     </div>
 
-    <!-- 2. 게임 컨테이너 -->
+    <!-- ② 게임 컨테이너 -->
     <div id="game-container">
-        <!-- 화면 꽉 차게 렌더링 할 캔버스 -->
         <canvas id="gameCanvas"></canvas>
-        <canvas id="minimap" width="150" height="150"></canvas>
-        <div id="instruction" class="hidden">화면을 클릭하여 진입하세요<br><span style="font-size: 14px; color:#aaa;">(ESC: 마우스 잠금 해제 / 조이스틱 액션버튼: 클릭)</span></div>
+        <canvas id="minimap" width="160" height="100"></canvas>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div class="hud-item" id="hud-time">⏱ <span id="hud-time-val">00:00</span></div>
+            <div class="hud-item" id="hud-quiz">✅ <span id="hud-quiz-val">0 / 0</span></div>
+            <div class="hud-item" id="hud-player">👤 <span id="hud-player-val">Guest</span></div>
+        </div>
+
+        <!-- 입장 안내 -->
+        <div id="instruction" class="hidden">
+            화면을 클릭하여 진입하세요
+            <br><span class="instruction-sub">ESC: 마우스 잠금 해제 ｜ 조이스틱 ACTION: 진입</span>
+        </div>
+
+        <!-- 조이스틱 연결 뱃지 -->
+        <div id="joystick-badge" class="hidden">🎮 조이스틱 연결됨</div>
+
+        <!-- 탈출구 나침반 -->
+        <div id="compass">
+            <div id="compass-arrow">▲</div>
+            <div id="compass-label">탈출구</div>
+        </div>
     </div>
 
-    <!-- 3. 문제 풀이 패널 -->
-    <div id="math-panel" class="hidden"> 
+    <!-- ③ 문제 풀이 패널 -->
+    <div id="math-panel" class="hidden">
+        <div id="quiz-header">
+            <span id="quiz-lang-tag">언어: ---</span>
+            <span id="quiz-counter">문제</span>
+        </div>
         <div id="question-text" class="question">문제를 생성 중입니다...</div>
         <div id="options-text" class="options"></div>
         <div class="timer-bar"><div id="timer-fill"></div></div>
+        <div id="joystick-quiz-hint" class="hidden">🎮 ↑↓ 선택 &nbsp;｜&nbsp; ACTION 버튼: 제출</div>
     </div>
 
-    <!-- 4. 로직 스크립트 (Firebase 및 게임 로직 통합) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-
-        // Firebase 설정 (Realtime Database)
-        const firebaseConfig = {
-            apiKey: "AIzaSyA7kuCSB9UsaCtOYIhsQGuil0-g5rIh_Fs",
-            authDomain: "bloodborne-b1aae.firebaseapp.com",
-            databaseURL: "https://bloodborne-b1aae-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "bloodborne-b1aae",
-            storageBucket: "bloodborne-b1aae.firebasestorage.app",
-            messagingSenderId: "415284045901",
-            appId: "1:415284045901:web:ec45dcb66a955811c45404",
-            measurementId: "G-N1MV59ZVQV"
-        };
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        window.saveGameStats = async function(stats) {
-            try {
-                await push(ref(db, 'game_clears'), {
-                    ...stats,
-                    serverTimestamp: new Date().toISOString()
-                });
-                console.log("✅ 기록이 Firebase에 전송되었습니다.");
-            } catch (e) { console.error("❌ 저장 실패:", e); }
-        };
-
-        // Groq API 키
-        const GROQ_API_KEY = "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";
-
-        // Three.js 셋업
-        const canvas3D = document.getElementById("gameCanvas");
-        const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight); // 전체화면 렌더링
-        const scene = new THREE.Scene();
-
-        const mCanvas = document.getElementById("minimap");
-        const mCtx = mCanvas.getContext("2d");
-
-        // 밝기 조절 반영
-        const bgColor = 0x050505;
-        scene.background = new THREE.Color(bgColor); 
-        scene.fog = new THREE.Fog(bgColor, 1, 15); // 시야 넓힘
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-
-        // 게임 설정
-        const COLS = 32, ROWS = 20;
-        let maze = [], visited = [];
-        const PLAYER_SPEED = 0.07;
-        const CHASER_SPEED = PLAYER_SPEED * 1.05;
-
-        let player = { x: 1.5, y: 1.5 }; 
-        let exit = { x: COLS - 2.5, y: ROWS - 2.5 };
-        let chaser = { x: 0, y: 0 }; 
-
-        let pitch = 0, yaw = 0; 
-        const keys = { w: false, a: false, s: false, d: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false };
-
-        const GameState = { READY: -1, PLAYING: 0, QUIZ: 1, GAMEOVER: 2 };
-        let gameState = GameState.READY; 
-
-        let devModeStop = false; 
-        let isChaserActive = true; 
-        let currentUserId = "Guest";
-
-        let currentQuestionStr = "", currentAnswer = "";
-        let timeLeft = 60000; const MAX_TIME = 60000;
-        let gameStartTime = 0;
-        let quizStats = { totalAttempted: 0, correctAnswers: 0, wrongQuestions: [] };
-        let keyTimeStats = { up: 0, down: 0, left: 0, right: 0 };
-        let lastFrameTime = Date.now();
-
-        let wallMeshes = [], chaserMesh, exitMesh, chaserTexture;
-
-        // 로그인 버튼 처리
-        document.getElementById("startGameBtn").addEventListener("click", () => {
-            const idVal = document.getElementById("playerIdInput").value.trim();
-            if (idVal) currentUserId = idVal;
-            document.getElementById("login-panel").style.display = "none";
-            document.getElementById("instruction").classList.remove("hidden");
-        });
-
-        // 마우스 클릭 이벤트 (화면 전체 감지)
-        document.addEventListener("click", () => {
-            if (document.getElementById("login-panel").style.display !== "none") return;
-            if (gameState === GameState.READY || gameState === GameState.PLAYING) {
-                canvas3D.requestPointerLock();
-            }
-        });
-
-        document.addEventListener("pointerlockchange", () => {
-            if (document.pointerLockElement === canvas3D) {
-                if (gameState === GameState.READY) {
-                    gameState = GameState.PLAYING;
-                    if (gameStartTime === 0) gameStartTime = Date.now();
-                }
-                document.getElementById("instruction").style.display = "none";
-            } else {
-                if (gameState === GameState.PLAYING) {
-                    gameState = GameState.READY;
-                    document.getElementById("instruction").innerText = "화면을 클릭하여 계속하세요)";
-                    document.getElementById("instruction").style.display = "block";
-                }
-            }
-        });
-
-        document.addEventListener("mousemove", (e) => {
-            if (document.pointerLockElement === canvas3D && gameState === GameState.PLAYING) {
-                yaw -= e.movementX * 0.002;
-                pitch -= e.movementY * 0.002;
-                pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch)); 
-                camera.rotation.set(pitch, yaw, 0, 'YXZ');
-            }
-        });
-
-        // 화면 리사이즈 대응
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        function generateMaze(width, height) {
-            let newMaze = Array(height).fill().map(() => Array(width).fill(1));
-            visited = Array(height).fill().map(() => Array(width).fill(false));
-            function carve(cx, cy) {
-                newMaze[cy][cx] = 0;
-                let dirs = [[0,-2],[0,2],[-2,0],[2,0]].sort(() => Math.random() - 0.5);
-                for (let [dx, dy] of dirs) {
-                    let nx = cx + dx, ny = cy + dy;
-                    if (nx >= 1 && nx < width - 1 && ny >= 1 && ny < height - 1 && newMaze[ny][nx] === 1) {
-                        newMaze[cy + dy/2][cx + dx/2] = 0; carve(nx, ny);
-                    }
-                }
-            }
-            carve(1, 1);
-            newMaze[Math.floor(exit.y)][Math.floor(exit.x)] = 0;
-            return newMaze;
-        }
-
-        function build3DWorld() {
-            wallMeshes.forEach(w => scene.remove(w));
-            wallMeshes = [];
-            
-            // 밝기 상향
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); 
-            scene.add(ambientLight);
-            
-            const wallGeo = new THREE.BoxGeometry(1, 1, 1);
-            const wallMat = new THREE.MeshLambertMaterial({ color: 0x6A5832 }); 
-            for(let r=0; r<ROWS; r++) {
-                for(let c=0; c<COLS; c++) {
-                    if(maze[r][c] === 1) {
-                        let w = new THREE.Mesh(wallGeo, wallMat);
-                        w.position.set(c + 0.5, 0, r + 0.5);
-                        scene.add(w);
-                        wallMeshes.push(w);
-                    }
-                }
-            }
-            const floorGeo = new THREE.PlaneGeometry(COLS, ROWS);
-            const floorMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.set(COLS/2, -0.5, ROWS/2);
-            scene.add(floor);
-
-            if(!exitMesh) {
-                exitMesh = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshLambertMaterial({color: 0x00ff00}));
-                scene.add(exitMesh);
-            }
-            exitMesh.position.set(exit.x + 0.5, 0, exit.y + 0.5);
-
-            if(!chaserMesh && chaserTexture) {
-                chaserMesh = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshBasicMaterial({ map: chaserTexture }));
-                scene.add(chaserMesh);
-            }
-        }
-
-        // 추적자 랜덤 위치 소환 (벽이 아닌 곳 & 플레이어 기준 5칸 이상 떨어지게)
-        function spawnChaserRandomly() {
-            let valid = false; let rx, ry;
-            while(!valid) {
-                let tryX = Math.floor(Math.random() * (COLS - 2)) + 1;
-                let tryY = Math.floor(Math.random() * (ROWS - 2)) + 1;
-                
-                if (maze[tryY] && maze[tryY][tryX] === 0) {
-                    let dist = Math.hypot((tryX + 0.5) - player.x, (tryY + 0.5) - player.y);
-                    if (dist >= 5) {
-                        rx = tryX + 0.5;
-                        ry = tryY + 0.5;
-                        valid = true;
-                    }
-                }
-            }
-            chaser.x = rx; chaser.y = ry;
-            isChaserActive = true;
-            if(chaserMesh) {
-                chaserMesh.position.set(chaser.x, 0, chaser.y);
-                chaserMesh.visible = true;
-            }
-        }
-
-        // 💡 언어 랜덤 선택 함수 (아랍어 40%, 영어 30%, 일본어 20%, 한국어 10%)
-       // 💡 언어 랜덤 선택 함수 (아랍어 35%, 산스크리트어 30%, 영어 15%, 일본어 15%, 한국어 5%)
-function getTargetLanguage() {
-    const rand = Math.random() * 100;
-    if (rand < 35) return "Arabic (아랍어)";
-    if (rand < 65) return "Sanskrit (산스크리트어)";
-    if (rand < 80) return "English (영어)";
-    if (rand < 95) return "Japanese (일본어)";
-    return "Korean (한국어)";
-}
-
-async function fetchMathProblem() {
-    if (gameState !== GameState.QUIZ) return;
-    document.getElementById("math-panel").classList.remove("hidden");
-    document.getElementById("question-text").innerText = "🚨 심연의 감시자가 문제를 준비 중입니다...";
-    document.getElementById("options-text").innerHTML = "";
-
-    const targetLang = getTargetLanguage();
-    
-    // 💡 문제 난이도 상향 및 수학적 엄밀성 강조 프롬프트
-    const prompt = `
-        Role: 최고 난이도 수학 문제 출제 위원.
-        Task: 고등학교 수능 수학 가형(미적분/기하) 중 오답률 90% 이상의 '킬러 문항(30번 수준)'을 생성하라.
-        Language: 모든 문장과 보기는 반드시 '${targetLang}'로만 작성하라.
-        Requirements:
-        1. 단순 계산이 아닌 심오한 추론과 개념 복합형 문제를 출제할 것.
-        2. 수학적 기호(LaTeX 표현법 등)를 정확히 사용하여 오류가 전혀 없도록 할 것.
-        3. 정답은 1~5번 보기 중 하나로 완벽하게 떨어져야 하며, 계산 과정에 모순이 없어야 함.
-        4. 보기는 매력적인 오답을 포함하여 구성할 것.
-        
-        Output JSON Format ONLY:
-        {
-            "question": "엄밀하고 구체적인 문제 내용",
-            "options": ["1번 보기", "2번 보기", "3번 보기", "4번 보기", "5번 보기"],
-            "answer": "정답 숫자 (1~5)"
-        }
-    `;
-    
-    try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: { 
-                "Authorization": `Bearer ${GROQ_API_KEY}`, 
-                "Content-Type": "application/json" 
-            },
-            body: JSON.stringify({ 
-                model: "llama-3.3-70b-versatile", 
-                messages: [{ role: "user", content: prompt }], 
-                response_format: { type: "json_object" } 
-            })
-        });
-        const data = await response.json();
-        const quiz = JSON.parse(data.choices[0].message.content);
-        
-        currentQuestionStr = quiz.question; 
-        document.getElementById("question-text").innerText = `[Language: ${targetLang}]\n\n${quiz.question}`;
-        document.getElementById("options-text").innerHTML = quiz.options.map((opt, i) => 
-            `<span style="margin:0 10px; display:block; margin-bottom:5px;">(${i+1}) ${opt}</span>`
-        ).join("");
-        currentAnswer = quiz.answer.toString();
-        timeLeft = MAX_TIME;
-    } catch (e) { 
-        document.getElementById("question-text").innerText = "심연의 연결이 끊겼습니다. 다시 시도하십시오."; 
-    }
-}
-
-        window.addEventListener("keydown", (e) => {
-            if (e.ctrlKey && e.key.toLowerCase() === 'f') {
-                e.preventDefault(); devModeStop = !devModeStop;
-                console.log(devModeStop ? "🛠️ 개발자 모드: 추격자 정지" : "🛠️ 개발자 모드: 추격자 재개"); 
-                return;
-            }
-            const key = e.key.toLowerCase();
-            if (keys.hasOwnProperty(key)) keys[key] = true;
-
-            // 퀴즈 정답/오답 처리
-            if (gameState === GameState.QUIZ && ["1","2","3","4","5"].includes(e.key)) {
-                quizStats.totalAttempted++; 
-                if (e.key === currentAnswer) {
-                    quizStats.correctAnswers++; 
-                    
-                    document.getElementById("question-text").innerText = "✅ 정답입니다! (추적자 3초 후 재배치)";
-                    document.getElementById("options-text").innerHTML = "";
-                    
-                    setTimeout(() => {
-                        document.getElementById("math-panel").classList.add("hidden");
-                        gameState = GameState.READY;
-                        document.getElementById("instruction").innerText = "화면을 클릭하여 계속하세요)";
-                        document.getElementById("instruction").style.display = "block";
-                    }, 1000);
-
-                    isChaserActive = false;
-                    if(chaserMesh) chaserMesh.visible = false;
-                    setTimeout(() => {
-                        spawnChaserRandomly();
-                    }, 3000);
-
-                } else {
-                    // 💡 오답 시 정답 번호 표출
-                    alert(`❌ 오답! 정답은 ${currentAnswer}번이었습니다.\n 잡아먹혔습니다.`); 
-                    resetGame();
-                }
-            }
-        });
-
-        window.addEventListener("keyup", (e) => {
-            const key = e.key.toLowerCase(); if (keys.hasOwnProperty(key)) keys[key] = false;
-        });
-
-        function update() {
-            if (gameState === GameState.PLAYING) {
-                let dx = 0, dz = 0;
-                if (keys.w || keys.arrowup) { dx -= Math.sin(yaw) * PLAYER_SPEED; dz -= Math.cos(yaw) * PLAYER_SPEED; }
-                if (keys.s || keys.arrowdown) { dx += Math.sin(yaw) * PLAYER_SPEED; dz += Math.cos(yaw) * PLAYER_SPEED; }
-                if (keys.a || keys.arrowleft) { dx -= Math.cos(yaw) * PLAYER_SPEED; dz += Math.sin(yaw) * PLAYER_SPEED; }
-                if (keys.d || keys.arrowright) { dx += Math.cos(yaw) * PLAYER_SPEED; dz -= Math.sin(yaw) * PLAYER_SPEED; }
-
-                let margin = 0.4; 
-                if (maze[Math.floor(player.y)] && maze[Math.floor(player.y)][Math.floor(player.x + dx + Math.sign(dx) * margin)] === 0) player.x += dx;
-                if (maze[Math.floor(player.y + dz + Math.sign(dz) * margin)] && maze[Math.floor(player.y + dz + Math.sign(dz) * margin)][Math.floor(player.x)] === 0) player.y += dz;
-                
-                visited[Math.floor(player.y)][Math.floor(player.x)] = true;
-                camera.position.set(player.x, 0, player.y);
-
-                if (!devModeStop && isChaserActive) {
-                    let cdx = player.x - chaser.x, cdy = player.y - chaser.y;
-                    let dist = Math.sqrt(cdx*cdx + cdy*cdy);
-                    chaser.x += (cdx / dist) * CHASER_SPEED; 
-                    chaser.y += (cdy / dist) * CHASER_SPEED;
-                    
-                    if (dist < 0.6) { 
-                        document.exitPointerLock(); 
-                        gameState = GameState.QUIZ; 
-                        fetchMathProblem(); 
-                    }
-                }
-                
-                // 추적자 굴러가는 애니메이션
-                if (chaserMesh && isChaserActive) {
-                    chaserMesh.position.set(chaser.x, 0, chaser.y);
-                    let cdx = player.x - chaser.x, cdy = player.y - chaser.y;
-                    chaserMesh.rotation.x += (cdy * 0.05); 
-                    chaserMesh.rotation.z -= (cdx * 0.05);
-                }
-
-                // 탈출 조건
-                // 탈출 조건
-                if (Math.hypot(player.x - (exit.x + 0.5), player.y - (exit.y + 0.5)) < 0.8) {
-                    let time = ((Date.now() - gameStartTime) / 1000).toFixed(2);
-                    alert(`🎉 탈출 성공! 시간: ${time}초`);
-                    
-                    // 💡 [수정] 밀리초를 보기 편하게 '초' 단위로 바꾸고 전송 데이터에 포함시킵니다.
-                    let formattedMoveTimes = {
-                        up: (keyTimeStats.up / 1000).toFixed(2) + "s",
-                        down: (keyTimeStats.down / 1000).toFixed(2) + "s",
-                        left: (keyTimeStats.left / 1000).toFixed(2) + "s",
-                        right: (keyTimeStats.right / 1000).toFixed(2) + "s"
-                    };
-
-                    if(window.saveGameStats) {
-                        window.saveGameStats({ 
-                            playerId: currentUserId, 
-                            clearTime: time, 
-                            ...quizStats, 
-                            moveTimeStats: formattedMoveTimes // 👈 전송 데이터에 새로 추가됨
-                        });
-                    }
-                    resetGame();
-                }
-
-            } else if (gameState === GameState.QUIZ) {
-                timeLeft -= 16.6; 
-                if (timeLeft <= 0) { alert("시간 초과!"); resetGame(); }
-                const timerFill = document.getElementById("timer-fill");
-                if (timerFill) timerFill.style.width = (timeLeft / MAX_TIME * 100) + "%";
-            }
-        }
-
-        function drawMinimap() {
-            mCtx.fillStyle = "#000"; mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
-            const sw = mCanvas.width / COLS, sh = mCanvas.height / ROWS;
-            for (let y = 0; y < ROWS; y++) {
-                for (let x = 0; x < COLS; x++) {
-                    if (visited[y][x]) {
-                        mCtx.fillStyle = maze[y][x] === 1 ? "#443" : "#111";
-                        mCtx.fillRect(x * sw, y * sh, sw, sh);
-                    }
-                }
-            }
-            mCtx.fillStyle = "lime"; mCtx.fillRect(exit.x * sw, exit.y * sh, sw, sh); // 출구
-            if (isChaserActive) {
-                mCtx.fillStyle = devModeStop ? "blue" : "red"; 
-                mCtx.fillRect(chaser.x * sw - 2, chaser.y * sh - 2, 4, 4);
-            }
-            mCtx.fillStyle = "white"; mCtx.fillRect(player.x * sw - 2, player.y * sh - 2, 4, 4);
-        }
-
-        function resetGame() {
-            maze = generateMaze(COLS, ROWS); player = { x: 1.5, y: 1.5 };
-            chaser = { x: exit.x + 0.5, y: exit.y + 0.5 };
-            
-            gameState = GameState.READY; 
-            gameStartTime = 0;
-            isChaserActive = true;
-            devModeStop = false;
-            
-            if(chaserMesh) chaserMesh.visible = true;
-            document.getElementById("math-panel").classList.add("hidden");
-            
-            const instruction = document.getElementById("instruction");
-            if(document.getElementById("login-panel").style.display === "none") {
-                instruction.innerText = "화면을 클릭하여 진입하세요\n(조이스틱 액션버튼: 클릭)";
-                instruction.style.display = "block";
-                instruction.classList.remove("hidden");
-            }
-
-            quizStats = { totalAttempted: 0, correctAnswers: 0, wrongQuestions: [] };
-            keyTimeStats = { up: 0, down: 0, left: 0, right: 0 };
-            lastFrameTime = Date.now();
-            build3DWorld();
-        }
-
-        const img = new Image(); img.src = 'image_0.png';
-        img.onload = () => { 
-            chaserTexture = new THREE.CanvasTexture(img); 
-            resetGame(); 
-            function loop() { update(); renderer.render(scene, camera); drawMinimap(); requestAnimationFrame(loop); }
-            loop();
-        };
-        img.onerror = () => {
-            console.log("image_0.png를 불러오지 못했습니다. 질감 없이 시작합니다.");
-            resetGame();
-            function loop() { update(); renderer.render(scene, camera); drawMinimap(); requestAnimationFrame(loop); }
-            loop();
-        };
-    </script>
+    <script type="module" src="game.js"></script>
 </body>
 </html>
