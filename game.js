@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  game.js  ·  심연의 미로 — 메인 게임 로직
+//  game.js  ·   미로 — 메인 게임 로직
 //  fixes: keyTimeStats dt 누적, wrongQuestions 기록
 //  new:   Web Serial 조이스틱, 좌우=카메라 회전, 퀴즈 조이스틱 탐색
 // ═══════════════════════════════════════════════════════════════
@@ -326,7 +326,7 @@ async function fetchMathProblem() {
     if (gameState !== GameState.QUIZ) return;
 
     mathPanel.classList.remove("hidden");
-    questionTextEl.innerText = "🚨 심연의 감시자가 문제를 준비 중입니다...";
+    questionTextEl.innerText = "🚨 감시자가 문제를 준비 중입니다...";
     optionsTextEl.innerHTML  = "";
     quizSelectedOption       = 1;
     timeLeft                 = MAX_TIME;
@@ -376,7 +376,7 @@ Output JSON only (no markdown backticks):
             </div>`).join("");
 
     } catch (e) {
-        questionTextEl.innerText = "심연의 연결이 끊겼습니다.\n숫자키(1~5)로 답을 입력하세요.";
+        questionTextEl.innerText = "연결이 끊겼습니다.\n숫자키(1~5)로 답을 입력하세요.";
         console.error("Groq API 오류:", e);
     }
 }
