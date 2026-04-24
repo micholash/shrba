@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  game.js  ·  미로
+//  game.js  ·  심연 미로
 //  - Firebase Compat 전역 객체 사용 (import 없음)
 //  - 일반 <script> 태그로 로드 (type="module" 아님)
 //  - keyTimeStats dt 누적 수정
@@ -32,13 +32,6 @@ function saveGameStats(stats) {
         .catch(function(e) { console.error("❌ Firebase 저장 실패:", e); });
 }
 
-// 오답 즉시 저장 (game_wrong_answers 별도 테이블)
-function saveWrongAnswer(data) {
-    if (!fbDb) return;
-    fbDb.ref("game_wrong_answers").push(data)
-        .then(function() { console.log("📝 오답 노트 저장:", data.chosenAnswer, "→ 정답", data.correctAnswer); })
-        .catch(function(e) { console.error("❌ 오답 저장 실패:", e); });
-}
 
 // ── Groq API Key ──────────────────────────────────────────────
 var GROQ_API_KEY = "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";
@@ -220,14 +213,6 @@ function submitAnswer(chosen) {
             chosenAnswer:  chosen,
             correctAnswer: currentAnswer
         });
-        // 오답 발생 즉시 Firebase에 단건 저장
-        saveWrongAnswer({
-            playerId:      currentUserId,
-            question:      currentQuestionStr,
-            chosenAnswer:  chosen,
-            correctAnswer: currentAnswer,
-            timestamp:     new Date().toISOString()
-        });
         alert("❌ 오답! 정답은 " + currentAnswer + "번이었습니다.\n잡아먹혔습니다.");
         resetGame();
     }
@@ -325,7 +310,7 @@ function getTargetLanguage() {
 function fetchMathProblem() {
     if (gameState !== GameState.QUIZ) return;
     mathPanel.classList.remove("hidden");
-    questionTextEl.innerText = "🚨 감시자가 문제를 준비 중입니다...";
+    questionTextEl.innerText = "🚨 심연의 감시자가 문제를 준비 중입니다...";
     optionsTextEl.innerHTML  = "";
     quizSelectedOption       = 1;
     timeLeft                 = MAX_TIME;
@@ -370,7 +355,7 @@ function fetchMathProblem() {
         }).join("");
     })
     .catch(function(e) {
-        questionTextEl.innerText = "연결이 끊겼습니다.\n숫자키(1~5)로 답을 입력하세요.";
+        questionTextEl.innerText = "심연의 연결이 끊겼습니다.\n숫자키(1~5)로 답을 입력하세요.";
         console.error("Groq API 오류:", e);
     });
 }
