@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  game.js  ·  심연의 미로
+//  game.js  ·  미로
 //  - Firebase Compat 전역 객체 사용 (import 없음)
 //  - 일반 <script> 태그로 로드 (type="module" 아님)
 //  - keyTimeStats dt 누적 수정
@@ -325,7 +325,7 @@ function getTargetLanguage() {
 function fetchMathProblem() {
     if (gameState !== GameState.QUIZ) return;
     mathPanel.classList.remove("hidden");
-    questionTextEl.innerText = "🚨 심연의 감시자가 문제를 준비 중입니다...";
+    questionTextEl.innerText = "🚨 감시자가 문제를 준비 중입니다...";
     optionsTextEl.innerHTML  = "";
     quizSelectedOption       = 1;
     timeLeft                 = MAX_TIME;
@@ -370,7 +370,7 @@ function fetchMathProblem() {
         }).join("");
     })
     .catch(function(e) {
-        questionTextEl.innerText = "심연의 연결이 끊겼습니다.\n숫자키(1~5)로 답을 입력하세요.";
+        questionTextEl.innerText = "연결이 끊겼습니다.\n숫자키(1~5)로 답을 입력하세요.";
         console.error("Groq API 오류:", e);
     });
 }
