@@ -85,6 +85,7 @@ var currentUserId  = "Guest";
 
 var currentQuestionStr = "";
 var currentAnswer      = "";
+var currentOptions     = []; 
 var timeLeft           = MAX_TIME;
 var gameStartTime      = 0;
 var lastFrameTime      = Date.now();
@@ -213,10 +214,11 @@ function submitAnswer(chosen) {
         setTimeout(function() { spawnChaserRandomly(); }, 3000);
     } else {
         var wrongEntry = {
-            question:      currentQuestionStr,
-            chosenAnswer:  chosen,
-            correctAnswer: currentAnswer
-        };
+    question:      currentQuestionStr,
+    options:       currentOptions,      // ✅ 선지 추가
+    chosenAnswer:  chosen,
+    correctAnswer: currentAnswer
+};
         quizStats.wrongQuestions.push(wrongEntry);
         sessionWrongLog.push(wrongEntry); // ✅ 세션 누적
         alert("❌ 오답! 정답은 " + currentAnswer + "번이었습니다.\n잡아먹혔습니다.");
@@ -352,6 +354,7 @@ function fetchMathProblem() {
         var quiz = JSON.parse(data.choices[0].message.content);
         currentQuestionStr = quiz.question;
         currentAnswer      = String(quiz.answer).trim().replace(/[^1-5]/g, "");
+        currentOptions     = quiz.options;  // ✅ 추가
         questionTextEl.innerText = quiz.question;
         optionsTextEl.innerHTML  = quiz.options.map(function(opt, i) {
             return '<div class="option-item' + (i === 0 ? ' selected' : '') + '"'
