@@ -546,37 +546,33 @@ function update() {
         // 탈출 판정
         if (Math.hypot(player.x - (exit.x + 0.5), player.y - (exit.y + 0.5)) < 0.85) {
             var clearTime = ((Date.now() - gameStartTime) / 1000).toFixed(2);
-            alert("🎉 탈출 성공!\n⏱ 클리어 시간: " + clearTime + "초");
-            var wrongCount = quizStats.wrongQuestions.length;
-            saveGameStats({
-                // 기본 정보
+    
+            // ✅ stats를 미리 복사해두고 저장
+            var statsSnapshot = {
                 playerId:  currentUserId,
                 clearTime: parseFloat(clearTime),
-
-                // 수학 문제 풀이 통계
                 quizSummary: {
                     totalAttempted: quizStats.totalAttempted,
                     correctAnswers: quizStats.correctAnswers,
-                    wrongAnswers:   wrongCount,
+                    wrongAnswers:   quizStats.wrongQuestions.length,
                     accuracy:       quizStats.totalAttempted > 0
                         ? ((quizStats.correctAnswers / quizStats.totalAttempted) * 100).toFixed(1) + "%"
                         : "N/A"
-                },
-
-                // 오답 노트 (문제 원문 + 선택한 오답 + 실제 정답)
-                wrongNotes: quizStats.wrongQuestions,
-
-                // 방향키 이동 누적 시간
+                },      
+                wrongNotes: quizStats.wrongQuestions.slice(), // ✅ 배열 복사
                 moveTimeStats: {
                     up:    (keyTimeStats.up    / 1000).toFixed(2) + "s",
                     down:  (keyTimeStats.down  / 1000).toFixed(2) + "s",
                     left:  (keyTimeStats.left  / 1000).toFixed(2) + "s",
                     right: (keyTimeStats.right / 1000).toFixed(2) + "s"
                 }
-            });
-            resetGame();
-            return;
-        }
+            };
+
+    alert("🎉 탈출 성공!\n⏱ 클리어 시간: " + clearTime + "초");
+    saveGameStats(statsSnapshot); // ✅ 복사본 전달
+    resetGame();
+    return;
+}
 
         // HUD
         if (gameStartTime) {
