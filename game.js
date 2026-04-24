@@ -574,6 +574,7 @@ function update() {
         wrongNotes: sessionWrongLog.map(function(w) { // ✅ 오답 전체 전송
             return {
                 question:      w.question,
+                options:       w.options,
                 chosenAnswer:  w.chosenAnswer,
                 correctAnswer: w.correctAnswer
             };
