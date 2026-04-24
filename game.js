@@ -89,7 +89,10 @@ var timeLeft           = MAX_TIME;
 var gameStartTime      = 0;
 var lastFrameTime      = Date.now();
 
-var quizStats    = { totalAttempted: 0, correctAnswers: 0, wrongQuestions: [] };
+var quizStats        = { totalAttempted: 0, correctAnswers: 0, wrongQuestions: [] };
+var sessionWrongLog  = []; // ✅ resetGame()에도 초기화 안 됨
+var sessionTotalAttempted  = 0;
+var sessionCorrectAnswers  = 0;
 var keyTimeStats = { up: 0, down: 0, left: 0, right: 0 };
 var quizSelectedOption = 1;
 
@@ -192,9 +195,11 @@ window.addEventListener("keyup", function(e) {
 function submitAnswer(chosen) {
     if (gameState !== GameState.QUIZ) return;
     quizStats.totalAttempted++;
+    sessionTotalAttempted++; // ✅
 
     if (chosen === currentAnswer) {
         quizStats.correctAnswers++;
+        sessionCorrectAnswers++; // ✅
         questionTextEl.innerText = "✅ 정답! 추적자가 3초 후 재배치됩니다.";
         optionsTextEl.innerHTML  = "";
         setTimeout(function() {
@@ -207,12 +212,13 @@ function submitAnswer(chosen) {
         if (chaserMesh) chaserMesh.visible = false;
         setTimeout(function() { spawnChaserRandomly(); }, 3000);
     } else {
-        // 오답 노트: 문제 원문 + 플레이어가 선택한 오답 번호 + 실제 정답 번호
-        quizStats.wrongQuestions.push({
+        var wrongEntry = {
             question:      currentQuestionStr,
             chosenAnswer:  chosen,
             correctAnswer: currentAnswer
-        });
+        };
+        quizStats.wrongQuestions.push(wrongEntry);
+        sessionWrongLog.push(wrongEntry); // ✅ 세션 누적
         alert("❌ 오답! 정답은 " + currentAnswer + "번이었습니다.\n잡아먹혔습니다.");
         resetGame();
     }
@@ -545,31 +551,40 @@ function update() {
 
         // 탈출 판정
         if (Math.hypot(player.x - (exit.x + 0.5), player.y - (exit.y + 0.5)) < 0.85) {
-            var clearTime = ((Date.now() - gameStartTime) / 1000).toFixed(2);
-    
-            // ✅ stats를 미리 복사해두고 저장
-            var statsSnapshot = {
-                playerId:  currentUserId,
-                clearTime: parseFloat(clearTime),
-                quizSummary: {
-                    totalAttempted: quizStats.totalAttempted,
-                    correctAnswers: quizStats.correctAnswers,
-                    wrongAnswers:   quizStats.wrongQuestions.length,
-                    accuracy:       quizStats.totalAttempted > 0
-                        ? ((quizStats.correctAnswers / quizStats.totalAttempted) * 100).toFixed(1) + "%"
-                        : "N/A"
-                },      
-                wrongNotes: quizStats.wrongQuestions.slice(), // ✅ 배열 복사
-                moveTimeStats: {
-                    up:    (keyTimeStats.up    / 1000).toFixed(2) + "s",
-                    down:  (keyTimeStats.down  / 1000).toFixed(2) + "s",
-                    left:  (keyTimeStats.left  / 1000).toFixed(2) + "s",
-                    right: (keyTimeStats.right / 1000).toFixed(2) + "s"
-                }
+    var clearTime = ((Date.now() - gameStartTime) / 1000).toFixed(2);
+
+    var totalWrong = sessionWrongLog.length;
+    var totalRight = sessionCorrectAnswers;
+    var totalTried = sessionTotalAttempted;
+
+    var statsSnapshot = {
+        playerId:  currentUserId,
+        clearTime: parseFloat(clearTime),
+        quizSummary: {
+            totalAttempted: totalTried,
+            correctAnswers: totalRight,
+            wrongAnswers:   totalWrong,
+            accuracy:       totalTried > 0
+                ? ((totalRight / totalTried) * 100).toFixed(1) + "%"
+                : "N/A"
+        },
+        wrongNotes: sessionWrongLog.map(function(w) { // ✅ 오답 전체 전송
+            return {
+                question:      w.question,
+                chosenAnswer:  w.chosenAnswer,
+                correctAnswer: w.correctAnswer
             };
+        }),
+        moveTimeStats: {
+            up:    (keyTimeStats.up    / 1000).toFixed(2) + "s",
+            down:  (keyTimeStats.down  / 1000).toFixed(2) + "s",
+            left:  (keyTimeStats.left  / 1000).toFixed(2) + "s",
+            right: (keyTimeStats.right / 1000).toFixed(2) + "s"
+        }
+    };
 
     alert("🎉 탈출 성공!\n⏱ 클리어 시간: " + clearTime + "초");
-    saveGameStats(statsSnapshot); // ✅ 복사본 전달
+    saveGameStats(statsSnapshot);
     resetGame();
     return;
 }
