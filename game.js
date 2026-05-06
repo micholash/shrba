@@ -34,7 +34,7 @@ function saveGameStats(stats) {
 
 
 // ── Groq API Key ──────────────────────────────────────────────
-var GROQ_API_KEY = "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";
+var GROQ_API_KEY = "xai-jqBfYudsETOunL709sExjqJJKKLmBespLACHJ6cxrAau12QCKP71b4INcOSNPa1CCcLu7Llv5BADyraZ";
 
 // ── Constants ─────────────────────────────────────────────────
 var COLS         = 32;
